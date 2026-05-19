@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Relatório Terapêutico</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sage: #7a9e8e;
+    --sage-light: #e8f0ec;
+    --sage-dark: #4a6e5e;
+    --warm: #f5f0eb;
+    --text: #2c2c2c;
+    --text-light: #6b6b6b;
+    --accent: #c4956a;
+    --white: #ffffff;
+    --border: #ddd8d0;
+    --shadow: 0 2px 20px rgba(0,0,0,0.06);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--warm);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  header {
+    background: var(--sage-dark);
+    padding: 24px 40px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  header .logo {
+    width: 38px; height: 38px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px;
+  }
+
+  header h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 21px;
+    font-weight: 400;
+    color: white;
+    letter-spacing: 0.5px;
+  }
+
+  header p {
+    color: rgba(255,255,255,0.6);
+    font-size: 12px;
+    margin-top: 2px;
+  }
+
+  .main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 28px 20px;
+    display: grid;
+    gap: 20px;
+  }
+
+  .card {
+    background: var(--white);
+    border-radius: 12px;
+    padding: 26px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+  }
+
+  .card-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--sage-dark);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-title::before {
+    content: '';
+    display: block;
+    width: 3px; height: 17px;
+    background: var(--sage);
+    border-radius: 2px;
+  }
+
+  .meta-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .field label {
+    display: block;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-light);
+    margin-bottom: 5px;
+  }
+
+  .field input, .field select {
+    width: 100%;
+    padding: 9px 13px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--text);
+    background: var(--warm);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .field input:focus, .field select:focus {
+    border-color: var(--sage);
+    background: white;
+  }
+
+  .transcription-box {
+    width: 100%;
+    min-height: 150px;
+    padding: 13px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text);
+    background: var(--warm);
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .transcription-box:focus { border-color: var(--sage); background: white; }
+  .transcription-box::placeholder { color: #bbb; }
+
+  .char-counter {
+    font-size: 11px;
+    color: var(--text-light);
+    margin-top: 6px;
+    text-align: right;
+  }
+
+  .hint {
+    font-size: 12px;
+    color: var(--text-light);
+    margin-top: 7px;
+    font-style: italic;
+  }
+
+  .btn-generate {
+    width: 100%;
+    padding: 15px;
+    background: var(--sage-dark);
+    color: white;
+    border: none;
+    border-radius: 9px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    letter-spacing: 0.3px;
+  }
+
+  .btn-generate:hover { background: var(--sage); }
+  .btn-generate:active { transform: scale(0.99); }
+  .btn-generate:disabled { background: #ccc; cursor: not-allowed; }
+
+  /* Loading com etapas */
+  .loading {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    padding: 28px;
+    gap: 16px;
+  }
+
+  .loading-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    max-width: 360px;
+  }
+
+  .step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--text-light);
+    transition: color 0.3s;
+  }
+
+  .step.active { color: var(--sage-dark); font-weight: 500; }
+  .step.done { color: var(--sage); }
+
+  .step-icon {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    flex-shrink: 0;
+    transition: all 0.3s;
+  }
+
+  .step.active .step-icon {
+    border-color: var(--sage-dark);
+    background: var(--sage-light);
+  }
+
+  .step.done .step-icon {
+    border-color: var(--sage);
+    background: var(--sage);
+    color: white;
+  }
+
+  .spinner-small {
+    width: 12px; height: 12px;
+    border: 1.5px solid rgba(255,255,255,0.4);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  #report-output { display: none; }
+
+  .tabs {
+    display: flex;
+    border-bottom: 2px solid var(--sage-light);
+    margin-bottom: 24px;
+  }
+
+  .tab-btn {
+    padding: 10px 22px;
+    border: none;
+    background: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-light);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.2s;
+  }
+
+  .tab-btn:hover { color: var(--sage-dark); }
+  .tab-btn.active { color: var(--sage-dark); border-bottom-color: var(--sage-dark); }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .report-header {
+    border-bottom: 2px solid var(--sage-light);
+    padding-bottom: 16px;
+    margin-bottom: 22px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .report-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--sage-dark);
+  }
+
+  .report-meta {
+    font-size: 12px;
+    color: var(--text-light);
+    margin-top: 4px;
+    line-height: 1.7;
+  }
+
+  .report-badge {
+    background: var(--sage-light);
+    color: var(--sage-dark);
+    padding: 5px 13px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .report-section { margin-bottom: 18px; }
+
+  .report-section h3 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--sage-dark);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 9px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid var(--sage-light);
+  }
+
+  .report-section p, .report-section li {
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--text);
+  }
+
+  .report-section ul { list-style: none; padding: 0; }
+
+  .report-section ul li {
+    padding: 4px 0 4px 16px;
+    position: relative;
+  }
+
+  .report-section ul li::before {
+    content: '·';
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+    font-size: 18px;
+    line-height: 1.4;
+  }
+
+  .report-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+
+  .report-box {
+    background: var(--sage-light);
+    border-radius: 8px;
+    padding: 13px 15px;
+  }
+
+  .report-box .label {
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--sage-dark);
+    margin-bottom: 6px;
+  }
+
+  .report-box .value {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.6;
+  }
+
+  .humor-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--warm);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 5px 14px;
+    font-size: 13px;
+  }
+
+  .humor-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+  .msg-preview {
+    background: #f0faf5;
+    border: 1px solid #b6ddc9;
+    border-radius: 12px;
+    padding: 22px 24px;
+    line-height: 1.9;
+    font-size: 15px;
+    color: var(--text);
+    white-space: pre-wrap;
+    font-family: 'DM Sans', sans-serif;
+    min-height: 120px;
+    outline: none;
+  }
+
+  .msg-preview:focus { border-color: var(--sage); }
+
+  .msg-hint {
+    font-size: 12px;
+    color: var(--text-light);
+    margin-top: 10px;
+    font-style: italic;
+  }
+
+  .actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+
+  .btn-action {
+    padding: 9px 18px;
+    border-radius: 7px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid var(--border);
+    background: white;
+    color: var(--text);
+  }
+
+  .btn-action:hover { background: var(--sage-light); border-color: var(--sage); color: var(--sage-dark); }
+  .btn-action.primary { background: var(--accent); color: white; border-color: var(--accent); }
+  .btn-action.primary:hover { background: #b5845a; }
+  .btn-action.whatsapp { background: #25d366; color: white; border-color: #25d366; }
+  .btn-action.whatsapp:hover { background: #1da851; }
+
+  .error-msg {
+    background: #fef2f2;
+    border: 1px solid #fca5a5;
+    color: #b91c1c;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 13px;
+    display: none;
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(60px);
+    background: var(--sage-dark);
+    color: white;
+    padding: 10px 22px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    opacity: 0;
+    transition: all 0.3s;
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🌿</div>
+  <div>
+    <h1>Relatório Terapêutico</h1>
+    <p>Gerador inteligente de sessões</p>
+  </div>
+</header>
+
+<div class="main">
+
+  <div class="card">
+    <div class="card-title">Dados da Sessão</div>
+    <div class="meta-grid">
+      <div class="field">
+        <label>Nome da Cliente</label>
+        <input type="text" id="nome" placeholder="Ex: Maria S.">
+      </div>
+      <div class="field">
+        <label>Data da Sessão</label>
+        <input type="date" id="data">
+      </div>
+      <div class="field">
+        <label>Número da Sessão</label>
+        <input type="text" id="sessao_num" placeholder="Ex: 12ª sessão">
+      </div>
+      <div class="field">
+        <label>Modalidade</label>
+        <select id="modalidade">
+          <option value="presencial">Presencial</option>
+          <option value="online">Online</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Transcrição da Sessão</div>
+    <textarea class="transcription-box" id="transcricao"
+      oninput="atualizarContador()"
+      placeholder="Cole aqui a transcrição completa da sessão. Pode ser longa — o sistema processa automaticamente em etapas."></textarea>
+    <div class="char-counter" id="contador">0 caracteres</div>
+    <p class="hint">Transcrições longas são processadas automaticamente em duas etapas, sem necessidade de cortar o texto.</p>
+  </div>
+
+  <button class="btn-generate" id="btn-gerar" onclick="gerarRelatorio()">
+    ✦ Gerar Relatório Terapêutico
+  </button>
+
+  <div class="error-msg" id="error-msg"></div>
+
+  <div class="loading" id="loading">
+    <div class="loading-steps">
+      <div class="step" id="step1">
+        <div class="step-icon" id="icon1">1</div>
+        <span>Lendo e resumindo a transcrição...</span>
+      </div>
+      <div class="step" id="step2">
+        <div class="step-icon" id="icon2">2</div>
+        <span>Elaborando o relatório clínico...</span>
+      </div>
+      <div class="step" id="step3">
+        <div class="step-icon" id="icon3">3</div>
+        <span>Preparando mensagem para a cliente...</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="report-output">
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="mudarAba('clinico', this)">📋 Relatório Clínico</button>
+      <button class="tab-btn" onclick="mudarAba('cliente', this)">💬 Mensagem para a Cliente</button>
+    </div>
+
+    <div class="tab-panel active" id="tab-clinico">
+      <div class="report-header">
+        <div>
+          <div class="report-title" id="r-titulo">Relatório de Sessão</div>
+          <div class="report-meta" id="r-meta"></div>
+        </div>
+        <span class="report-badge">Sessão registrada</span>
+      </div>
+      <div id="report-body"></div>
+      <div class="actions">
+        <button class="btn-action primary" onclick="imprimirRelatorio()">🖨 Imprimir / Salvar PDF</button>
+        <button class="btn-action" onclick="copiarRelatorio()">📋 Copiar texto</button>
+        <button class="btn-action" onclick="novaSessao()">+ Nova Sessão</button>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-cliente">
+      <div class="report-header">
+        <div>
+          <div class="report-title" id="c-titulo">Mensagem para a Cliente</div>
+          <div class="report-meta" id="c-meta"></div>
+        </div>
+        <span class="report-badge" style="background:#e6f9f0;color:#1a7a4a;">Para envio</span>
+      </div>
+      <div class="msg-preview" id="msg-cliente" contenteditable="true"></div>
+      <p class="msg-hint">✏️ Você pode editar o texto acima antes de enviar.</p>
+      <div class="actions">
+        <button class="btn-action whatsapp" onclick="copiarWhatsApp()">📱 Copiar para WhatsApp</button>
+        <button class="btn-action primary" onclick="copiarMensagem()">📋 Copiar texto</button>
+        <button class="btn-action" onclick="novaSessao()">+ Nova Sessão</button>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+document.getElementById('data').valueAsDate = new Date();
+
+function atualizarContador() {
+  const n = document.getElementById('transcricao').value.length;
+  document.getElementById('contador').textContent = n.toLocaleString('pt-BR') + ' caracteres' + (n > 5000 ? ' — processamento em 2 etapas automáticas ✓' : '');
+}
+
+function mudarAba(aba, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + aba).classList.add('active');
+}
+
+function setStep(n, estado) {
+  const step = document.getElementById('step' + n);
+  const icon = document.getElementById('icon' + n);
+  step.className = 'step ' + estado;
+  if (estado === 'active') icon.innerHTML = '<div class="spinner-small"></div>';
+  else if (estado === 'done') icon.innerHTML = '✓';
+  else icon.innerHTML = n;
+}
+
+async function chamarAPI(mensagens, maxTokens) {
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: maxTokens,
+      messages: mensagens
+    })
+  });
+  const data = await response.json();
+  let text = data.content?.map(i => i.text || '').join('') || '';
+  return text.replace(/```json|```/g, '').trim();
+}
+
+async function gerarRelatorio() {
+  const nome = document.getElementById('nome').value.trim() || 'Cliente';
+  const data = document.getElementById('data').value;
+  const sessaoNum = document.getElementById('sessao_num').value.trim();
+  const modalidade = document.getElementById('modalidade').value;
+  const transcricao = document.getElementById('transcricao').value.trim();
+
+  if (!transcricao) {
+    mostrarErro('Por favor, cole a transcrição da sessão antes de gerar o relatório.');
+    return;
+  }
+
+  document.getElementById('btn-gerar').disabled = true;
+  document.getElementById('loading').style.display = 'flex';
+  document.getElementById('report-output').style.display = 'none';
+  document.getElementById('error-msg').style.display = 'none';
+  setStep(1, ''); setStep(2, ''); setStep(3, '');
+
+  try {
+    // ETAPA 1 — Resumir a transcrição (resolve o problema de textos longos)
+    setStep(1, 'active');
+
+    const resumoTexto = await chamarAPI([{
+      role: 'user',
+      content: `Você é um assistente especializado em psicoterapia. Leia a transcrição abaixo de uma sessão terapêutica e extraia um resumo estruturado com os seguintes elementos:
+
+- Estado emocional geral da cliente
+- Temas e assuntos principais abordados
+- Falas ou momentos marcantes da cliente
+- Insights, avanços ou mudanças percebidas
+- Dificuldades, resistências ou bloqueios mencionados
+- Tarefas ou combinados feitos na sessão
+- Intervenções ou orientações dadas pelo terapeuta
+
+Seja detalhado. Preserve nuances emocionais e contexto clínico importante.
+
+TRANSCRIÇÃO:
+${transcricao}`
+    }], 1500);
+
+    setStep(1, 'done');
+
+    // ETAPA 2 — Gerar relatório clínico + mensagem cliente com base no resumo
+    setStep(2, 'active');
+    setStep(3, 'active');
+
+    const resultado = await chamarAPI([{
+      role: 'user',
+      content: `Você é um assistente especializado em psicoterapia. Com base no resumo abaixo de uma sessão terapêutica, gere DOIS documentos em JSON.
+
+RESUMO DA SESSÃO:
+${resumoTexto}
+
+Retorne APENAS um JSON válido, sem markdown, sem blocos de código, sem texto extra. Use exatamente esta estrutura:
+
+{
+  "clinico": {
+    "estado_emocional": "descrição do estado emocional da cliente (1-2 frases)",
+    "humor_geral": "positivo",
+    "temas_principais": ["tema 1", "tema 2", "tema 3"],
+    "conteudo_sessao": "resumo narrativo do que foi trabalhado (3-5 frases)",
+    "insights_avancos": ["insight 1", "insight 2"],
+    "dificuldades_resistencias": ["dificuldade observada"],
+    "intervencoes_utilizadas": ["intervenção 1", "intervenção 2"],
+    "tarefas_casa": ["tarefa combinada"],
+    "proximos_passos": ["próximo passo 1", "próximo passo 2"],
+    "observacoes_terapeuta": "observações clínicas, hipóteses, pontos de atenção (2-3 frases)"
+  },
+  "mensagem_cliente": {
+    "saudacao": "Saudação acolhedora com o primeiro nome da cliente",
+    "resumo_sessao": "Resumo caloroso do que foi trabalhado, em linguagem simples, sem jargão clínico (2-3 frases)",
+    "reconhecimento": "Uma frase reconhecendo um avanço ou esforço da cliente",
+    "acoes": ["ação para a semana 1", "ação 2", "ação 3"],
+    "mensagem_encorajamento": "Uma frase de encorajamento para encerrar",
+    "assinatura": "Até a nossa próxima sessão! 💛"
+  }
+}
+
+Para humor_geral use apenas: "positivo", "neutro", "desafiador" ou "em crise".
+Para mensagem_cliente: linguagem quente, humana, sem termos clínicos.
+Se algum campo não tiver informação, use string vazia ou array vazio.`
+    }], 1500);
+
+    setStep(2, 'done');
+    setStep(3, 'done');
+
+    const dados = JSON.parse(resultado);
+    renderizarRelatorioClinico(dados.clinico, nome, data, sessaoNum, modalidade);
+    renderizarMensagemCliente(dados.mensagem_cliente, nome, data, sessaoNum);
+
+  } catch (err) {
+    mostrarErro('Não foi possível gerar o relatório. Verifique sua conexão e tente novamente.');
+    console.error(err);
+  } finally {
+    document.getElementById('btn-gerar').disabled = false;
+    document.getElementById('loading').style.display = 'none';
+  }
+}
+
+function renderizarRelatorioClinico(r, nome, data, sessaoNum, modalidade) {
+  const dataFormatada = data
+    ? new Date(data + 'T12:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
+    : '';
+
+  document.getElementById('r-titulo').textContent = `Relatório — ${nome}`;
+  document.getElementById('r-meta').innerHTML =
+    (dataFormatada ? `<strong>Data:</strong> ${dataFormatada}` : '') +
+    (sessaoNum ? ` &nbsp;|&nbsp; <strong>Sessão:</strong> ${sessaoNum}` : '') +
+    ` &nbsp;|&nbsp; <strong>Modalidade:</strong> ${modalidade}`;
+
+  const humores = {
+    'positivo':   { cor: '#22c55e', label: 'Positivo' },
+    'neutro':     { cor: '#94a3b8', label: 'Neutro' },
+    'desafiador': { cor: '#f59e0b', label: 'Desafiador' },
+    'em crise':   { cor: '#ef4444', label: 'Em crise' }
+  };
+  const humor = humores[r.humor_geral] || humores['neutro'];
+
+  let html = '';
+
+  html += `<div class="report-section">
+    <h3>Estado Emocional</h3>
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+      <div class="humor-indicator">
+        <div class="humor-dot" style="background:${humor.cor}"></div>${humor.label}
+      </div>
+      <p>${r.estado_emocional || '—'}</p>
+    </div>
+  </div>`;
+
+  if (r.temas_principais?.filter(Boolean).length) {
+    html += `<div class="report-section">
+      <h3>Temas Principais</h3>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        ${r.temas_principais.map(t => `<span style="background:var(--sage-light);color:var(--sage-dark);padding:4px 13px;border-radius:20px;font-size:13px;">${t}</span>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  html += `<div class="report-section">
+    <h3>Desenvolvimento da Sessão</h3>
+    <p>${r.conteudo_sessao || '—'}</p>
+  </div>`;
+
+  if (r.insights_avancos?.filter(Boolean).length) {
+    html += `<div class="report-section">
+      <h3>Insights & Avanços</h3>
+      <ul>${r.insights_avancos.map(i => `<li>${i}</li>`).join('')}</ul>
+    </div>`;
+  }
+
+  const temD = r.dificuldades_resistencias?.filter(Boolean).length;
+  const temI = r.intervencoes_utilizadas?.filter(Boolean).length;
+  if (temD || temI) {
+    html += `<div class="report-grid">`;
+    if (temD) html += `<div class="report-box">
+      <div class="label">⚠ Dificuldades / Resistências</div>
+      <div class="value"><ul style="list-style:none;padding:0;">${r.dificuldades_resistencias.map(d=>`<li>· ${d}</li>`).join('')}</ul></div>
+    </div>`;
+    if (temI) html += `<div class="report-box">
+      <div class="label">🛠 Intervenções Utilizadas</div>
+      <div class="value"><ul style="list-style:none;padding:0;">${r.intervencoes_utilizadas.map(i=>`<li>· ${i}</li>`).join('')}</ul></div>
+    </div>`;
+    html += `</div>`;
+  }
+
+  if (r.tarefas_casa?.filter(Boolean).length) {
+    html += `<div class="report-section">
+      <h3>Tarefas para Casa</h3>
+      <ul>${r.tarefas_casa.map(t=>`<li>${t}</li>`).join('')}</ul>
+    </div>`;
+  }
+
+  if (r.proximos_passos?.filter(Boolean).length) {
+    html += `<div class="report-section">
+      <h3>Próximos Passos</h3>
+      <ul>${r.proximos_passos.map(p=>`<li>${p}</li>`).join('')}</ul>
+    </div>`;
+  }
+
+  if (r.observacoes_terapeuta) {
+    html += `<div class="report-section" style="background:var(--sage-light);border-radius:8px;padding:15px;border-left:3px solid var(--sage);">
+      <h3 style="border:none;padding:0;margin-bottom:8px;">📝 Observações Clínicas</h3>
+      <p>${r.observacoes_terapeuta}</p>
+    </div>`;
+  }
+
+  document.getElementById('report-body').innerHTML = html;
+  document.getElementById('report-output').style.display = 'block';
+  document.getElementById('report-output').scrollIntoView({ behavior: 'smooth' });
+}
+
+function renderizarMensagemCliente(m, nome, data, sessaoNum) {
+  const dataFormatada = data
+    ? new Date(data + 'T12:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
+    : '';
+
+  document.getElementById('c-titulo').textContent = `Mensagem para ${nome}`;
+  document.getElementById('c-meta').innerHTML =
+    (dataFormatada ? `<strong>Data:</strong> ${dataFormatada}` : '') +
+    (sessaoNum ? ` &nbsp;|&nbsp; <strong>Sessão:</strong> ${sessaoNum}` : '');
+
+  const acoes = (m.acoes || []).filter(Boolean);
+  const listaAcoes = acoes.length
+    ? '\n📌 Para essa semana:\n' + acoes.map((a, i) => `${i + 1}. ${a}`).join('\n')
+    : '';
+
+  const texto = [
+    m.saudacao || `Olá, ${nome}!`,
+    '',
+    m.resumo_sessao || '',
+    '',
+    m.reconhecimento || '',
+    listaAcoes,
+    '',
+    m.mensagem_encorajamento || '',
+    '',
+    m.assinatura || 'Até a nossa próxima sessão! 💛'
+  ].join('\n').replace(/\n{3,}/g, '\n\n').trim();
+
+  document.getElementById('msg-cliente').textContent = texto;
+}
+
+function mostrarErro(msg) {
+  const el = document.getElementById('error-msg');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function imprimirRelatorio() { window.print(); }
+
+function copiarRelatorio() {
+  navigator.clipboard.writeText(
+    document.getElementById('r-titulo').innerText + '\n' +
+    document.getElementById('r-meta').innerText + '\n\n' +
+    document.getElementById('report-body').innerText
+  );
+  toast('Relatório copiado! ✓');
+}
+
+function copiarMensagem() {
+  navigator.clipboard.writeText(document.getElementById('msg-cliente').innerText);
+  toast('Mensagem copiada! ✓');
+}
+
+function copiarWhatsApp() {
+  navigator.clipboard.writeText(document.getElementById('msg-cliente').innerText);
+  toast('Pronto! Cole no WhatsApp ✓');
+}
+
+function novaSessao() {
+  document.getElementById('transcricao').value = '';
+  document.getElementById('report-output').style.display = 'none';
+  atualizarContador();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+
+<style media="print">
+  header, .card:not(#report-output), #btn-gerar, .loading, .actions, .tabs, #tab-cliente { display: none !important; }
+  #report-output { display: block !important; box-shadow: none !important; border: none !important; }
+  #tab-clinico { display: block !important; }
+  body { background: white !important; }
+</style>
+
+</body>
+</html>
