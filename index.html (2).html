@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Relatório Terapêutico</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sage: #7a9e8e;
+    --sage-light: #e8f0ec;
+    --sage-dark: #4a6e5e;
+    --warm: #f5f0eb;
+    --text: #2c2c2c;
+    --text-light: #6b6b6b;
+    --accent: #c4956a;
+    --white: #ffffff;
+    --border: #ddd8d0;
+    --shadow: 0 2px 20px rgba(0,0,0,0.06);
+    --purple-light: #f0eefe;
+    --purple: #7c6fd4;
+    --purple-dark: #4e44a0;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--warm); color: var(--text); min-height: 100vh; }
+
+  header { background: var(--sage-dark); padding: 22px 40px; display: flex; align-items: center; gap: 16px; }
+  header .logo { width: 38px; height: 38px; background: rgba(255,255,255,0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 17px; }
+  header h1 { font-family: 'Cormorant Garamond', serif; font-size: 21px; font-weight: 400; color: white; }
+  header p { color: rgba(255,255,255,0.6); font-size: 12px; margin-top: 2px; }
+
+  .nav { display: flex; background: white; border-bottom: 1px solid var(--border); }
+  .nav-btn { padding: 14px 24px; border: none; background: none; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; color: var(--text-light); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.2s; }
+  .nav-btn:hover { color: var(--sage-dark); }
+  .nav-btn.active { color: var(--sage-dark); border-bottom-color: var(--sage-dark); }
+
+  .page { display: none; max-width: 900px; margin: 0 auto; padding: 28px 20px; }
+  .page.active { display: block; }
+
+  .card { background: var(--white); border-radius: 12px; padding: 26px; box-shadow: var(--shadow); border: 1px solid var(--border); margin-bottom: 20px; }
+  .card-title { font-family: 'Cormorant Garamond', serif; font-size: 17px; font-weight: 600; color: var(--sage-dark); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .card-title::before { content: ''; display: block; width: 3px; height: 17px; background: var(--sage); border-radius: 2px; }
+
+  .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .field label { display: block; font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-light); margin-bottom: 5px; }
+  .field input, .field select, .field textarea { width: 100%; padding: 9px 13px; border: 1px solid var(--border); border-radius: 7px; font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--text); background: var(--warm); outline: none; transition: border-color 0.2s; }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--sage); background: white; }
+  .field textarea { min-height: 80px; resize: vertical; }
+
+  .transcription-box { width: 100%; min-height: 150px; padding: 13px; border: 1px solid var(--border); border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.6; color: var(--text); background: var(--warm); resize: vertical; outline: none; transition: border-color 0.2s; }
+  .transcription-box:focus { border-color: var(--sage); background: white; }
+  .transcription-box::placeholder { color: #bbb; }
+
+  .char-counter { font-size: 11px; color: var(--text-light); margin-top: 6px; text-align: right; }
+  .hint { font-size: 12px; color: var(--text-light); margin-top: 7px; font-style: italic; }
+
+  .btn-generate { width: 100%; padding: 15px; background: var(--sage-dark); color: white; border: none; border-radius: 9px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500; cursor: pointer; transition: background 0.2s; letter-spacing: 0.3px; margin-bottom: 20px; }
+  .btn-generate:hover { background: var(--sage); }
+  .btn-generate:disabled { background: #ccc; cursor: not-allowed; }
+
+  .loading { display: none; flex-direction: column; align-items: center; padding: 28px; gap: 16px; }
+  .loading-steps { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 380px; }
+  .step { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-light); transition: color 0.3s; }
+  .step.active { color: var(--sage-dark); font-weight: 500; }
+  .step.done { color: var(--sage); }
+  .step-icon { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0; transition: all 0.3s; }
+  .step.active .step-icon { border-color: var(--sage-dark); background: var(--sage-light); }
+  .step.done .step-icon { border-color: var(--sage); background: var(--sage); color: white; }
+  .spinner-small { width: 12px; height: 12px; border: 1.5px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  #report-output { display: none; }
+  .tabs { display: flex; border-bottom: 2px solid var(--sage-light); margin-bottom: 24px; }
+  .tab-btn { padding: 10px 20px; border: none; background: none; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; color: var(--text-light); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s; }
+  .tab-btn:hover { color: var(--sage-dark); }
+  .tab-btn.active { color: var(--sage-dark); border-bottom-color: var(--sage-dark); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .report-header { border-bottom: 2px solid var(--sage-light); padding-bottom: 16px; margin-bottom: 22px; display: flex; justify-content: space-between; align-items: flex-start; }
+  .report-title { font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 600; color: var(--sage-dark); }
+  .report-meta { font-size: 12px; color: var(--text-light); margin-top: 4px; line-height: 1.7; }
+  .report-badge { background: var(--sage-light); color: var(--sage-dark); padding: 5px 13px; border-radius: 20px; font-size: 12px; font-weight: 500; white-space: nowrap; }
+  .report-section { margin-bottom: 18px; }
+  .report-section h3 { font-family: 'Cormorant Garamond', serif; font-size: 14px; font-weight: 600; color: var(--sage-dark); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 9px; padding-bottom: 5px; border-bottom: 1px solid var(--sage-light); }
+  .report-section p, .report-section li { font-size: 14px; line-height: 1.8; color: var(--text); }
+  .report-section ul { list-style: none; padding: 0; }
+  .report-section ul li { padding: 4px 0 4px 16px; position: relative; }
+  .report-section ul li::before { content: '·'; position: absolute; left: 0; color: var(--accent); font-size: 18px; line-height: 1.4; }
+  .report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+  .report-box { background: var(--sage-light); border-radius: 8px; padding: 13px 15px; }
+  .report-box .label { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 1px; color: var(--sage-dark); margin-bottom: 6px; }
+  .report-box .value { font-size: 13px; color: var(--text); line-height: 1.6; }
+
+  .sistemic-box { background: var(--purple-light); border-radius: 8px; padding: 16px 18px; border-left: 3px solid var(--purple); margin-bottom: 18px; }
+  .sistemic-box .label { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 1px; color: var(--purple-dark); margin-bottom: 8px; }
+  .sistemic-box ul { list-style: none; padding: 0; }
+  .sistemic-box ul li { padding: 4px 0 4px 16px; position: relative; font-size: 14px; line-height: 1.8; color: var(--text); }
+  .sistemic-box ul li::before { content: '◈'; position: absolute; left: 0; color: var(--purple); font-size: 11px; line-height: 2.2; }
+
+  .humor-indicator { display: inline-flex; align-items: center; gap: 8px; background: var(--warm); border: 1px solid var(--border); border-radius: 20px; padding: 5px 14px; font-size: 13px; }
+  .humor-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+  .msg-preview { background: #f0faf5; border: 1px solid #b6ddc9; border-radius: 12px; padding: 22px 24px; line-height: 1.9; font-size: 15px; color: var(--text); white-space: pre-wrap; font-family: 'DM Sans', sans-serif; min-height: 120px; outline: none; }
+  .msg-preview:focus { border-color: var(--sage); }
+  .msg-hint { font-size: 12px; color: var(--text-light); margin-top: 10px; font-style: italic; }
+
+  .actions { display: flex; gap: 10px; margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+  .btn-action { padding: 9px 18px; border-radius: 7px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s; border: 1px solid var(--border); background: white; color: var(--text); }
+  .btn-action:hover { background: var(--sage-light); border-color: var(--sage); color: var(--sage-dark); }
+  .btn-action.primary { background: var(--accent); color: white; border-color: var(--accent); }
+  .btn-action.primary:hover { background: #b5845a; }
+  .btn-action.whatsapp { background: #25d366; color: white; border-color: #25d366; }
+  .btn-action.whatsapp:hover { background: #1da851; }
+
+  .error-msg { background: #fef2f2; border: 1px solid #fca5a5; color: #b91c1c; border-radius: 8px; padding: 12px 16px; font-size: 13px; display: none; margin-bottom: 16px; }
+
+  /* HISTÓRICO */
+  .history-empty { text-align: center; padding: 48px 20px; color: var(--text-light); }
+  .history-empty p { font-size: 15px; margin-bottom: 8px; }
+  .history-empty span { font-size: 13px; }
+
+  .client-group { margin-bottom: 28px; }
+  .client-name { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 600; color: var(--sage-dark); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .session-count { font-size: 12px; font-weight: 400; color: var(--text-light); font-family: 'DM Sans', sans-serif; }
+
+  .timeline { position: relative; padding-left: 20px; }
+  .timeline::before { content: ''; position: absolute; left: 6px; top: 8px; bottom: 8px; width: 1px; background: var(--border); }
+  .timeline-item { position: relative; margin-bottom: 14px; cursor: pointer; }
+  .timeline-item::before { content: ''; position: absolute; left: -17px; top: 12px; width: 8px; height: 8px; border-radius: 50%; background: var(--sage); border: 2px solid white; box-shadow: 0 0 0 1px var(--sage); }
+  .timeline-card { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; transition: border-color 0.2s; }
+  .timeline-card:hover { border-color: var(--sage); }
+  .timeline-card .tc-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+  .timeline-card .tc-date { font-size: 12px; color: var(--text-light); }
+  .timeline-card .tc-sessao { font-size: 12px; color: var(--sage-dark); background: var(--sage-light); padding: 2px 10px; border-radius: 12px; }
+  .timeline-card .tc-humor { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-light); margin-bottom: 6px; }
+  .timeline-card .tc-temas { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .timeline-card .tema-tag { background: var(--warm); border: 1px solid var(--border); border-radius: 12px; padding: 2px 10px; font-size: 11px; color: var(--text-light); }
+  .timeline-card .tc-resumo { font-size: 13px; color: var(--text); line-height: 1.6; }
+  .timeline-card .tc-actions { display: flex; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .tc-btn { padding: 5px 12px; font-size: 12px; border-radius: 6px; border: 1px solid var(--border); background: white; cursor: pointer; color: var(--text); transition: all 0.2s; }
+  .tc-btn:hover { background: var(--sage-light); border-color: var(--sage); color: var(--sage-dark); }
+  .tc-btn.danger { color: #b91c1c; border-color: #fca5a5; }
+  .tc-btn.danger:hover { background: #fef2f2; }
+
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: white; border-radius: 14px; padding: 28px; max-width: 700px; width: 100%; max-height: 85vh; overflow-y: auto; }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .modal-title { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 600; color: var(--sage-dark); }
+  .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-light); padding: 4px; }
+
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(60px); background: var(--sage-dark); color: white; padding: 10px 22px; border-radius: 20px; font-size: 13px; font-weight: 500; opacity: 0; transition: all 0.3s; pointer-events: none; z-index: 999; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🌿</div>
+  <div>
+    <h1>Relatório Terapêutico</h1>
+    <p>Gerador inteligente de sessões</p>
+  </div>
+</header>
+
+<div class="nav">
+  <button class="nav-btn active" onclick="navegar('gerar', this)">✦ Nova Sessão</button>
+  <button class="nav-btn" onclick="navegar('historico', this)">📁 Histórico</button>
+</div>
+
+<!-- PÁGINA: GERAR -->
+<div class="page active" id="page-gerar">
+
+  <div class="card">
+    <div class="card-title">Dados da Sessão</div>
+    <div class="meta-grid">
+      <div class="field"><label>Nome da Cliente</label><input type="text" id="nome" placeholder="Ex: Maria S."></div>
+      <div class="field"><label>Data da Sessão</label><input type="date" id="data"></div>
+      <div class="field"><label>Número da Sessão</label><input type="text" id="sessao_num" placeholder="Ex: 12ª sessão"></div>
+      <div class="field"><label>Modalidade</label><select id="modalidade"><option value="presencial">Presencial</option><option value="online">Online</option></select></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Transcrição da Sessão</div>
+    <textarea class="transcription-box" id="transcricao" oninput="atualizarContador()" placeholder="Cole aqui a transcrição completa da sessão. Pode ser longa — o sistema processa automaticamente em etapas."></textarea>
+    <div class="char-counter" id="contador">0 caracteres</div>
+    <p class="hint">Transcrições longas são processadas automaticamente em duas etapas.</p>
+  </div>
+
+  <button class="btn-generate" id="btn-gerar" onclick="gerarRelatorio()">✦ Gerar Relatório Terapêutico</button>
+
+  <div class="error-msg" id="error-msg"></div>
+
+  <div class="loading" id="loading">
+    <div class="loading-steps">
+      <div class="step" id="step1"><div class="step-icon" id="icon1">1</div><span>Lendo e resumindo a transcrição...</span></div>
+      <div class="step" id="step2"><div class="step-icon" id="icon2">2</div><span>Elaborando relatório clínico e visão sistêmica...</span></div>
+      <div class="step" id="step3"><div class="step-icon" id="icon3">3</div><span>Preparando mensagem e prática para a cliente...</span></div>
+      <div class="step" id="step4"><div class="step-icon" id="icon4">4</div><span>Salvando no histórico...</span></div>
+    </div>
+  </div>
+
+  <div class="card" id="report-output">
+    <div class="tabs">
+      <button class="tab-btn active" onclick="mudarAba('clinico', this)">📋 Relatório Clínico</button>
+      <button class="tab-btn" onclick="mudarAba('sistemico', this)">🔮 Visão Sistêmica</button>
+      <button class="tab-btn" onclick="mudarAba('cliente', this)">💬 Mensagem para a Cliente</button>
+    </div>
+
+    <div class="tab-panel active" id="tab-clinico">
+      <div class="report-header">
+        <div><div class="report-title" id="r-titulo">Relatório de Sessão</div><div class="report-meta" id="r-meta"></div></div>
+        <span class="report-badge">Sessão registrada</span>
+      </div>
+      <div id="report-body"></div>
+      <div class="actions">
+        <button class="btn-action primary" onclick="imprimirRelatorio()">🖨 Imprimir / PDF</button>
+        <button class="btn-action" onclick="copiarRelatorio()">📋 Copiar</button>
+        <button class="btn-action" onclick="novaSessao()">+ Nova Sessão</button>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-sistemico">
+      <div class="report-header">
+        <div><div class="report-title">Visão Sistêmica</div><div class="report-meta" id="s-meta"></div></div>
+        <span class="report-badge" style="background:var(--purple-light);color:var(--purple-dark);">Análise sistêmica</span>
+      </div>
+      <div id="sistemico-body"></div>
+      <div class="actions">
+        <button class="btn-action" onclick="copiarSistemico()">📋 Copiar</button>
+        <button class="btn-action" onclick="novaSessao()">+ Nova Sessão</button>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-cliente">
+      <div class="report-header">
+        <div><div class="report-title" id="c-titulo">Mensagem para a Cliente</div><div class="report-meta" id="c-meta"></div></div>
+        <span class="report-badge" style="background:#e6f9f0;color:#1a7a4a;">Para envio</span>
+      </div>
+      <div class="msg-preview" id="msg-cliente" contenteditable="true"></div>
+      <p class="msg-hint">✏️ Você pode editar o texto acima antes de enviar.</p>
+      <div class="actions">
+        <button class="btn-action whatsapp" onclick="copiarWhatsApp()">📱 Copiar para WhatsApp</button>
+        <button class="btn-action primary" onclick="copiarMensagem()">📋 Copiar texto</button>
+        <button class="btn-action" onclick="novaSessao()">+ Nova Sessão</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PÁGINA: HISTÓRICO -->
+<div class="page" id="page-historico">
+  <div id="historico-content"></div>
+</div>
+
+<!-- MODAL DETALHE -->
+<div class="modal-overlay" id="modal-overlay" onclick="fecharModal(event)">
+  <div class="modal" id="modal-content">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Sessão</div>
+      <button class="modal-close" onclick="document.getElementById('modal-overlay').classList.remove('open')">✕</button>
+    </div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── ESTADO ──────────────────────────────────────────────
+let dadosRelatorio = {};
+
+document.getElementById('data').valueAsDate = new Date();
+
+function atualizarContador() {
+  const n = document.getElementById('transcricao').value.length;
+  document.getElementById('contador').textContent = n.toLocaleString('pt-BR') + ' caracteres' + (n > 5000 ? ' — processamento em 2 etapas ✓' : '');
+}
+
+function navegar(pagina, btn) {
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('page-' + pagina).classList.add('active');
+  if (pagina === 'historico') renderizarHistorico();
+}
+
+function mudarAba(aba, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + aba).classList.add('active');
+}
+
+function setStep(n, estado) {
+  const step = document.getElementById('step' + n);
+  const icon = document.getElementById('icon' + n);
+  step.className = 'step ' + estado;
+  if (estado === 'active') icon.innerHTML = '<div class="spinner-small"></div>';
+  else if (estado === 'done') icon.innerHTML = '✓';
+  else icon.innerHTML = n;
+}
+
+const BACKEND_URL = 'https://relatorio-backend-luq9.onrender.com';
+
+async function chamarAPI(mensagens, maxTokens) {
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: maxTokens, messages: mensagens })
+  });
+  const data = await response.json();
+  let text = data.content?.map(i => i.text || '').join('') || '';
+  return text.replace(/```json|```/g, '').trim();
+}
+
+// ── GERAR RELATÓRIO ──────────────────────────────────────
+async function gerarRelatorio() {
+  const nome = document.getElementById('nome').value.trim() || 'Cliente';
+  const data = document.getElementById('data').value;
+  const sessaoNum = document.getElementById('sessao_num').value.trim();
+  const modalidade = document.getElementById('modalidade').value;
+  const transcricao = document.getElementById('transcricao').value.trim();
+
+  if (!transcricao) { mostrarErro('Por favor, cole a transcrição da sessão.'); return; }
+
+  document.getElementById('btn-gerar').disabled = true;
+  document.getElementById('loading').style.display = 'flex';
+  document.getElementById('report-output').style.display = 'none';
+  document.getElementById('error-msg').style.display = 'none';
+  [1,2,3,4].forEach(n => setStep(n, ''));
+
+  try {
+    // Etapas visuais
+    setStep(1, 'active');
+
+    // Chama backend Railway (resolve problema de CORS)
+    const response = await fetch(BACKEND_URL + '/gerar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ transcricao })
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.erro || 'Erro no servidor');
+    }
+
+    const resposta = await response.json();
+    if (!resposta.ok) throw new Error(resposta.erro || 'Erro ao gerar relatório');
+
+    setStep(1, 'done');
+    setStep(2, 'done');
+    setStep(3, 'done');
+
+    const dados = resposta.dados;
+    dadosRelatorio = { dados, nome, data, sessaoNum, modalidade };
+
+    renderizarRelatorioClinico(dados.clinico, nome, data, sessaoNum, modalidade);
+    renderizarSistemico(dados.sistemico, nome, data, sessaoNum);
+    renderizarMensagemCliente(dados.mensagem_cliente, nome, data, sessaoNum);
+
+    // ETAPA 4 — Salvar no histórico
+    setStep(4, 'active');
+    salvarNoHistorico({ dados, nome, data, sessaoNum, modalidade });
+    setStep(4, 'done');
+
+  } catch (err) {
+    mostrarErro('Não foi possível gerar o relatório. Verifique sua conexão e tente novamente.');
+    console.error(err);
+  } finally {
+    document.getElementById('btn-gerar').disabled = false;
+    document.getElementById('loading').style.display = 'none';
+  }
+}
+
+// ── RENDERIZAR CLÍNICO ───────────────────────────────────
+function renderizarRelatorioClinico(r, nome, data, sessaoNum, modalidade) {
+  const dataF = data ? new Date(data + 'T12:00').toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' }) : '';
+  document.getElementById('r-titulo').textContent = `Relatório — ${nome}`;
+  document.getElementById('r-meta').innerHTML = (dataF ? `<strong>Data:</strong> ${dataF}` : '') + (sessaoNum ? ` &nbsp;|&nbsp; <strong>Sessão:</strong> ${sessaoNum}` : '') + ` &nbsp;|&nbsp; <strong>Modalidade:</strong> ${modalidade}`;
+
+  const humores = { 'positivo':{cor:'#22c55e',label:'Positivo'}, 'neutro':{cor:'#94a3b8',label:'Neutro'}, 'desafiador':{cor:'#f59e0b',label:'Desafiador'}, 'em crise':{cor:'#ef4444',label:'Em crise'} };
+  const humor = humores[r.humor_geral] || humores['neutro'];
+
+  let html = `<div class="report-section"><h3>Estado Emocional</h3><div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;"><div class="humor-indicator"><div class="humor-dot" style="background:${humor.cor}"></div>${humor.label}</div><p>${r.estado_emocional||'—'}</p></div></div>`;
+
+  if (r.temas_principais?.filter(Boolean).length) html += `<div class="report-section"><h3>Temas Principais</h3><div style="display:flex;flex-wrap:wrap;gap:8px;">${r.temas_principais.map(t=>`<span style="background:var(--sage-light);color:var(--sage-dark);padding:4px 13px;border-radius:20px;font-size:13px;">${t}</span>`).join('')}</div></div>`;
+
+  html += `<div class="report-section"><h3>Desenvolvimento da Sessão</h3><p>${r.conteudo_sessao||'—'}</p></div>`;
+
+  if (r.insights_avancos?.filter(Boolean).length) html += `<div class="report-section"><h3>Insights & Avanços</h3><ul>${r.insights_avancos.map(i=>`<li>${i}</li>`).join('')}</ul></div>`;
+
+  const temD = r.dificuldades_resistencias?.filter(Boolean).length;
+  const temI = r.intervencoes_utilizadas?.filter(Boolean).length;
+  if (temD||temI) { html += `<div class="report-grid">`; if(temD) html+=`<div class="report-box"><div class="label">⚠ Dificuldades</div><div class="value"><ul style="list-style:none;padding:0;">${r.dificuldades_resistencias.map(d=>`<li>· ${d}</li>`).join('')}</ul></div></div>`; if(temI) html+=`<div class="report-box"><div class="label">🛠 Intervenções</div><div class="value"><ul style="list-style:none;padding:0;">${r.intervencoes_utilizadas.map(i=>`<li>· ${i}</li>`).join('')}</ul></div></div>`; html+=`</div>`; }
+
+  if (r.tarefas_casa?.filter(Boolean).length) html += `<div class="report-section"><h3>Tarefas para Casa</h3><ul>${r.tarefas_casa.map(t=>`<li>${t}</li>`).join('')}</ul></div>`;
+  if (r.proximos_passos?.filter(Boolean).length) html += `<div class="report-section"><h3>Próximos Passos</h3><ul>${r.proximos_passos.map(p=>`<li>${p}</li>`).join('')}</ul></div>`;
+  if (r.observacoes_terapeuta) html += `<div class="report-section" style="background:var(--sage-light);border-radius:8px;padding:15px;border-left:3px solid var(--sage);"><h3 style="border:none;padding:0;margin-bottom:8px;">📝 Observações Clínicas</h3><p>${r.observacoes_terapeuta}</p></div>`;
+
+  document.getElementById('report-body').innerHTML = html;
+  document.getElementById('report-output').style.display = 'block';
+  document.getElementById('report-output').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ── RENDERIZAR SISTÊMICO ─────────────────────────────────
+function renderizarSistemico(s, nome, data, sessaoNum) {
+  const dataF = data ? new Date(data + 'T12:00').toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' }) : '';
+  document.getElementById('s-meta').innerHTML = (dataF ? `<strong>Data:</strong> ${dataF}` : '') + (sessaoNum ? ` &nbsp;|&nbsp; <strong>Sessão:</strong> ${sessaoNum}` : '');
+
+  let html = '';
+
+  if (s.padroes_identificados?.filter(Boolean).length) {
+    html += `<div class="sistemic-box"><div class="label">◈ Padrões sistêmicos identificados</div><ul>${s.padroes_identificados.map(p=>`<li>${p}</li>`).join('')}</ul></div>`;
+  }
+  if (s.lealdades_invisíveis?.filter(Boolean).length) {
+    html += `<div class="sistemic-box"><div class="label">◈ Lealdades e repetições familiares</div><ul>${s.lealdades_invisíveis.map(l=>`<li>${l}</li>`).join('')}</ul></div>`;
+  }
+  if (s.campos_familiares) {
+    html += `<div class="report-section"><h3>Campos familiares percebidos</h3><p>${s.campos_familiares}</p></div>`;
+  }
+  if (s.movimentos_necessarios?.filter(Boolean).length) {
+    html += `<div class="report-section"><h3>Movimentos sistêmicos sugeridos</h3><ul>${s.movimentos_necessarios.map(m=>`<li>${m}</li>`).join('')}</ul></div>`;
+  }
+  if (s.hipotese_sistemica) {
+    html += `<div class="sistemic-box" style="background:#f3f0ff;border-color:var(--purple-dark);"><div class="label">◈ Hipótese sistêmica</div><p style="font-size:14px;line-height:1.8;color:var(--text);">${s.hipotese_sistemica}</p></div>`;
+  }
+
+  document.getElementById('sistemico-body').innerHTML = html || '<p style="color:var(--text-light);font-size:14px;">Nenhum padrão sistêmico identificado nesta sessão.</p>';
+}
+
+// ── RENDERIZAR MENSAGEM ──────────────────────────────────
+function renderizarMensagemCliente(m, nome, data, sessaoNum) {
+  const dataF = data ? new Date(data + 'T12:00').toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' }) : '';
+  document.getElementById('c-titulo').textContent = `Mensagem para ${nome}`;
+  document.getElementById('c-meta').innerHTML = (dataF ? `<strong>Data:</strong> ${dataF}` : '') + (sessaoNum ? ` &nbsp;|&nbsp; <strong>Sessão:</strong> ${sessaoNum}` : '');
+
+  const acoes = (m.acoes||[]).filter(Boolean);
+  const listaAcoes = acoes.length ? '\n📌 Para essa semana:\n' + acoes.map((a,i)=>`${i+1}. ${a}`).join('\n') : '';
+  const pratica = m.pratica_semana?.titulo ? `\n\n✨ Prática da semana — ${m.pratica_semana.titulo}:\n${m.pratica_semana.descricao}` : '';
+
+  const texto = [m.saudacao||`Olá, ${nome}!`,'',m.resumo_sessao||'',m.reconhecimento||'',listaAcoes,pratica,'',m.mensagem_encorajamento||'','',m.assinatura||'Até a nossa próxima sessão! 💛'].join('\n').replace(/\n{3,}/g,'\n\n').trim();
+  document.getElementById('msg-cliente').textContent = texto;
+}
+
+// ── HISTÓRICO ────────────────────────────────────────────
+function salvarNoHistorico(registro) {
+  try {
+    const historico = JSON.parse(localStorage.getItem('relatorios_terapeuticos') || '[]');
+    historico.unshift({ id: Date.now(), ...registro });
+    localStorage.setItem('relatorios_terapeuticos', JSON.stringify(historico));
+  } catch(e) { console.error('Erro ao salvar histórico', e); }
+}
+
+function carregarHistorico() {
+  try { return JSON.parse(localStorage.getItem('relatorios_terapeuticos') || '[]'); }
+  catch(e) { return []; }
+}
+
+function renderizarHistorico() {
+  const historico = carregarHistorico();
+  const container = document.getElementById('historico-content');
+
+  if (!historico.length) {
+    container.innerHTML = `<div class="history-empty"><p>Nenhuma sessão registrada ainda.</p><span>As sessões geradas aparecerão aqui automaticamente.</span></div>`;
+    return;
+  }
+
+  // Agrupar por cliente
+  const grupos = {};
+  historico.forEach(r => {
+    const key = r.nome;
+    if (!grupos[key]) grupos[key] = [];
+    grupos[key].push(r);
+  });
+
+  const humores = { 'positivo':{cor:'#22c55e',label:'Positivo'}, 'neutro':{cor:'#94a3b8',label:'Neutro'}, 'desafiador':{cor:'#f59e0b',label:'Desafiador'}, 'em crise':{cor:'#ef4444',label:'Em crise'} };
+
+  let html = '';
+  Object.keys(grupos).forEach(nomeCliente => {
+    const sessoes = grupos[nomeCliente];
+    html += `<div class="client-group"><div class="client-name">${nomeCliente}<span class="session-count">${sessoes.length} sessão${sessoes.length>1?'s':''}</span></div><div class="timeline">`;
+
+    sessoes.forEach(r => {
+      const dataF = r.data ? new Date(r.data+'T12:00').toLocaleDateString('pt-BR', {day:'2-digit',month:'short',year:'numeric'}) : '—';
+      const humor = humores[r.dados?.clinico?.humor_geral] || humores['neutro'];
+      const temas = (r.dados?.clinico?.temas_principais||[]).slice(0,3);
+      const resumoCurto = (r.dados?.clinico?.conteudo_sessao||'').slice(0,120) + '...';
+
+      html += `<div class="timeline-item">
+        <div class="timeline-card">
+          <div class="tc-header">
+            <span class="tc-date">${dataF}</span>
+            ${r.sessaoNum ? `<span class="tc-sessao">${r.sessaoNum}</span>` : ''}
+          </div>
+          <div class="tc-humor"><span style="width:8px;height:8px;border-radius:50%;background:${humor.cor};display:inline-block;"></span>${humor.label}</div>
+          <div class="tc-temas">${temas.map(t=>`<span class="tema-tag">${t}</span>`).join('')}</div>
+          <div class="tc-resumo">${resumoCurto}</div>
+          <div class="tc-actions">
+            <button class="tc-btn" onclick="verSessao(${r.id})">Ver completo</button>
+            <button class="tc-btn danger" onclick="excluirSessao(${r.id})">Excluir</button>
+          </div>
+        </div>
+      </div>`;
+    });
+
+    html += `</div></div>`;
+  });
+
+  container.innerHTML = html;
+}
+
+function verSessao(id) {
+  const historico = carregarHistorico();
+  const r = historico.find(x => x.id === id);
+  if (!r) return;
+
+  const dataF = r.data ? new Date(r.data+'T12:00').toLocaleDateString('pt-BR', {day:'2-digit',month:'long',year:'numeric'}) : '';
+  document.getElementById('modal-title').textContent = `${r.nome} — ${dataF}`;
+
+  const s = r.dados?.sistemico;
+  const c = r.dados?.clinico;
+  const temas = (c?.temas_principais||[]).map(t=>`<span style="background:#e8f0ec;color:#4a6e5e;padding:3px 10px;border-radius:12px;font-size:12px;">${t}</span>`).join(' ');
+
+  let html = `<p style="font-size:13px;color:var(--text-light);margin-bottom:16px;">${r.sessaoNum||''} ${r.modalidade ? '· '+r.modalidade : ''}</p>`;
+  html += `<div style="margin-bottom:16px;"><p style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-light);margin-bottom:8px;">Temas</p><div style="display:flex;flex-wrap:wrap;gap:6px;">${temas}</div></div>`;
+  html += `<div style="margin-bottom:16px;"><p style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-light);margin-bottom:6px;">Desenvolvimento</p><p style="font-size:14px;line-height:1.8;">${c?.conteudo_sessao||'—'}</p></div>`;
+  if (c?.insights_avancos?.filter(Boolean).length) html += `<div style="margin-bottom:16px;"><p style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-light);margin-bottom:6px;">Insights</p><ul style="list-style:none;padding:0;">${c.insights_avancos.map(i=>`<li style="font-size:14px;padding:3px 0 3px 14px;position:relative;line-height:1.7;"><span style="position:absolute;left:0;color:#c4956a;">·</span>${i}</li>`).join('')}</ul></div>`;
+  if (s?.hipotese_sistemica) html += `<div style="background:var(--purple-light);border-radius:8px;padding:14px;border-left:3px solid var(--purple);margin-bottom:16px;"><p style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:1px;color:var(--purple-dark);margin-bottom:6px;">Hipótese sistêmica</p><p style="font-size:14px;line-height:1.8;">${s.hipotese_sistemica}</p></div>`;
+  if (c?.proximos_passos?.filter(Boolean).length) html += `<div><p style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-light);margin-bottom:6px;">Próximos passos</p><ul style="list-style:none;padding:0;">${c.proximos_passos.map(p=>`<li style="font-size:14px;padding:3px 0 3px 14px;position:relative;line-height:1.7;"><span style="position:absolute;left:0;color:#c4956a;">·</span>${p}</li>`).join('')}</ul></div>`;
+
+  document.getElementById('modal-body').innerHTML = html;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function excluirSessao(id) {
+  if (!confirm('Tem certeza que quer excluir essa sessão do histórico?')) return;
+  const historico = carregarHistorico().filter(x => x.id !== id);
+  localStorage.setItem('relatorios_terapeuticos', JSON.stringify(historico));
+  renderizarHistorico();
+  toast('Sessão excluída ✓');
+}
+
+function fecharModal(e) {
+  if (e.target === document.getElementById('modal-overlay')) document.getElementById('modal-overlay').classList.remove('open');
+}
+
+// ── UTILITÁRIOS ──────────────────────────────────────────
+function mostrarErro(msg) { const el = document.getElementById('error-msg'); el.textContent = msg; el.style.display = 'block'; }
+
+function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2500); }
+
+function imprimirRelatorio() { window.print(); }
+function copiarRelatorio() { navigator.clipboard.writeText(document.getElementById('r-titulo').innerText+'\n'+document.getElementById('r-meta').innerText+'\n\n'+document.getElementById('report-body').innerText); toast('Relatório copiado! ✓'); }
+function copiarSistemico() { navigator.clipboard.writeText(document.getElementById('sistemico-body').innerText); toast('Visão sistêmica copiada! ✓'); }
+function copiarMensagem() { navigator.clipboard.writeText(document.getElementById('msg-cliente').innerText); toast('Mensagem copiada! ✓'); }
+function copiarWhatsApp() { navigator.clipboard.writeText(document.getElementById('msg-cliente').innerText); toast('Pronto! Cole no WhatsApp ✓'); }
+function novaSessao() { document.getElementById('transcricao').value=''; document.getElementById('report-output').style.display='none'; atualizarContador(); window.scrollTo({top:0,behavior:'smooth'}); }
+</script>
+
+<style media="print">
+  header, .nav, .card:not(#report-output), #btn-gerar, .loading, .actions, .tabs, #tab-sistemico, #tab-cliente { display: none !important; }
+  #report-output { display: block !important; box-shadow: none !important; border: none !important; }
+  #tab-clinico { display: block !important; }
+  body { background: white !important; }
+</style>
+
+</body>
+</html>
